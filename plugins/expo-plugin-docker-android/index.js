@@ -70,9 +70,9 @@ const withDockerAndroidManifest = config => {
 const withDockerGradleProps = (config, props = {}) => {
   const gradleProps = [
     { key: 'android.minSdkVersion', value: String(props.minSdkVersion ?? 24) },
-    { key: 'android.compileSdkVersion', value: String(props.compileSdkVersion ?? 34) },
-    { key: 'android.targetSdkVersion', value: String(props.targetSdkVersion ?? 34) },
-    { key: 'android.buildToolsVersion', value: String(props.buildToolsVersion ?? '34.0.0') },
+    { key: 'android.compileSdkVersion', value: String(props.compileSdkVersion ?? 36) },
+    { key: 'android.targetSdkVersion', value: String(props.targetSdkVersion ?? 36) },
+    { key: 'android.buildToolsVersion', value: String(props.buildToolsVersion ?? '36.0.0') },
     { key: 'android.enableMinifyInReleaseBuilds', value: String(props.enableMinifyInReleaseBuilds ?? false) },
   ];
 
