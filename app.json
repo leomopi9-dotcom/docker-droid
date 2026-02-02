@@ -19,7 +19,13 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": true,
-      "package": "com.dockerandroid.app"
+      "package": "com.dockerandroid.app",
+      "permissions": [
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
+        "FOREGROUND_SERVICE",
+        "WAKE_LOCK"
+      ]
     },
     "web": {
       "output": "single",
@@ -39,10 +45,28 @@
           }
         }
       ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 24,
+            "compileSdkVersion": 34,
+            "targetSdkVersion": 34,
+            "buildToolsVersion": "34.0.0",
+            "enableProguardInReleaseBuilds": false,
+            "extraProguardRules": "-keep class com.dockerandroid.** { *; }"
+          }
+        }
+      ],
       "expo-web-browser"
     ],
     "experiments": {
       "reactCompiler": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "your-project-id-here"
+      }
     }
   }
 }

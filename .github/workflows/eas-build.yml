@@ -1,0 +1,133 @@
+name: EAS Build
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'android/**'
+      - 'client/**'
+      - 'package.json'
+      - 'app.json'
+      - 'eas.json'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: 'Build profile (development, preview, production)'
+        required: true
+        default: 'preview'
+        type: choice
+        options:
+          - development
+          - preview
+          - production
+      platform:
+        description: 'Platform to build'
+        required: true
+        default: 'android'
+        type: choice
+        options:
+          - android
+          - all
+
+jobs:
+  build:
+    name: EAS Build Android
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 🏗 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🏗 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'docker-droid/package-lock.json'
+
+      - name: 📦 Install dependencies
+        working-directory: ./docker-droid
+        run: npm ci
+
+      - name: 🏗 Setup EAS CLI
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: 🔍 Verify EAS CLI
+        run: eas --version
+
+      - name: 📋 Check EAS whoami
+        working-directory: ./docker-droid
+        run: eas whoami
+
+      - name: 🚀 Build Android APK (Preview)
+        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.profile == 'preview')
+        working-directory: ./docker-droid
+        run: eas build --platform android --profile preview --non-interactive
+
+      - name: 🚀 Build Android APK (Development)
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.profile == 'development'
+        working-directory: ./docker-droid
+        run: eas build --platform android --profile development --non-interactive
+
+      - name: 🚀 Build Android AAB (Production)
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.profile == 'production'
+        working-directory: ./docker-droid
+        run: eas build --platform android --profile production --non-interactive
+
+  build-local:
+    name: Local APK Build (Debug)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: 🏗 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🏗 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'docker-droid/package-lock.json'
+
+      - name: ☕ Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: 📦 Install dependencies
+        working-directory: ./docker-droid
+        run: npm ci
+
+      - name: 🔧 Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: 📦 Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: 🔨 Build Debug APK
+        working-directory: ./docker-droid/android
+        run: ./gradlew assembleDebug
+
+      - name: 📤 Upload Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-apk
+          path: docker-droid/android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 7

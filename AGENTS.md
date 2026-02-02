@@ -114,15 +114,36 @@ Port forwarding:
 
 ## Development Notes
 
-1. **QEMU Binary Required**: Place `libqemu-system-x86_64.so` in `android/app/src/main/jniLibs/arm64-v8a/`
+1. **QEMU Binary**: Bundled from Limbo Emulator v6.0.1 (QEMU 5.1.0)
+   - Location: `android/app/src/main/jniLibs/`
+   - Supported architectures: `arm64-v8a`, `armeabi-v7a`
+   - Main binary: `libqemu-system-x86_64.so`
+   - Dependencies: `libglib-2.0.so`, `libpixman-1.so`, `libSDL2.so`, etc.
 
-2. **Alpine ISO**: Either include in assets or download via `QemuService.downloadAlpineIso()`
+2. **BIOS/ROM Files**: Required for QEMU emulation
+   - Location: `android/app/src/main/assets/qemu/roms/`
+   - Includes: `bios.bin`, `vgabios-*.bin`, keymaps, firmware
+   - Auto-copied to app internal storage on first init
 
-3. **Mock Mode**: When VM not running, screens show simulated data for UI development
+3. **Alpine ISO**: Download via `QemuService.downloadAlpineIso()` on first setup
+   - Not bundled to keep APK size small (~50MB ISO)
 
-4. **Theme System**: Light/dark mode with mauve accent colors defined in `constants/theme.ts`
+4. **Mock Mode**: When VM not running, screens show simulated data for UI development
 
-5. **Type Safety**: Full TypeScript types for Docker API responses
+5. **Theme System**: Light/dark mode with mauve accent colors defined in `constants/theme.ts`
+
+6. **Type Safety**: Full TypeScript types for Docker API responses
+
+## QEMU Libraries (from Limbo)
+
+| Library | Size (arm64) | Purpose |
+|---------|--------------|---------|
+| libqemu-system-x86_64.so | 13MB | QEMU emulator |
+| libglib-2.0.so | 1.2MB | GLib dependency |
+| libpixman-1.so | 440KB | Pixel manipulation |
+| libSDL2.so | 1.2MB | Display/input |
+| libcompat-musl.so | 132KB | C library compat |
+| liblimbo.so | 14KB | Limbo helper |
 
 ## Common Tasks
 

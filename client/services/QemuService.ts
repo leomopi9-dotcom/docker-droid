@@ -36,6 +36,9 @@ export interface QemuInitResult {
   diskPath: string;
   isoExists: boolean;
   diskExists: boolean;
+  romsExists: boolean;
+  qemuBinaryExists: boolean;
+  qemuBinaryPath: string;
   architecture: string;
 }
 
@@ -135,6 +138,9 @@ class QemuMockService {
       diskPath: "/mock/qemu/alpine-disk.qcow2",
       isoExists: false,
       diskExists: false,
+      romsExists: false,
+      qemuBinaryExists: false,
+      qemuBinaryPath: "",
       architecture: "mock",
     };
   }

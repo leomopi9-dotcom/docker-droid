@@ -58,8 +58,30 @@ class QemuModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaMo
 
     init {
         try {
+            // Load QEMU dependencies from Limbo in correct order
+            val limboLibs = listOf(
+                "compat-musl",
+                "glib-2.0",
+                "pixman-1",
+                "SDL2",
+                "compat-SDL2-ext",
+                "compat-SDL2-addons",
+                "compat-limbo",
+                "limbo"
+            )
+            
+            for (lib in limboLibs) {
+                try {
+                    System.loadLibrary(lib)
+                    Log.d(TAG, "Loaded library: lib$lib.so")
+                } catch (e: UnsatisfiedLinkError) {
+                    Log.w(TAG, "Optional library not loaded: lib$lib.so - ${e.message}")
+                }
+            }
+            
+            // Load our JNI wrapper
             System.loadLibrary("qemu_jni")
-            Log.d(TAG, "Native library loaded successfully")
+            Log.d(TAG, "Native JNI library loaded successfully")
         } catch (e: UnsatisfiedLinkError) {
             Log.w(TAG, "Native library not available, using Java fallback: ${e.message}")
         }
@@ -125,6 +147,17 @@ class QemuModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaMo
                 if (!configFile.exists()) {
                     createQemuConfig(configFile)
                 }
+                
+                // Copy BIOS/ROM files from assets
+                val romsDir = File(qemuDir, "roms")
+                if (!romsDir.exists()) {
+                    romsDir.mkdirs()
+                    copyAssetDirectory(context, "qemu/roms", romsDir)
+                    Log.d(TAG, "Copied BIOS/ROM files to ${romsDir.absolutePath}")
+                }
+
+                // Find QEMU binary
+                val qemuBinary = findQemuBinary()
 
                 val result = Arguments.createMap().apply {
                     putBoolean("success", true)
@@ -133,6 +166,9 @@ class QemuModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaMo
                     putString("diskPath", diskFile.absolutePath)
                     putBoolean("isoExists", isoFile.exists())
                     putBoolean("diskExists", diskFile.exists())
+                    putBoolean("romsExists", romsDir.exists() && romsDir.listFiles()?.isNotEmpty() == true)
+                    putBoolean("qemuBinaryExists", qemuBinary != null)
+                    putString("qemuBinaryPath", qemuBinary?.absolutePath ?: "")
                     putString("architecture", Build.SUPPORTED_ABIS.firstOrNull() ?: "unknown")
                 }
 
@@ -459,7 +495,8 @@ class QemuModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaMo
         ramMb: Int,
         cpuCores: Int
     ): List<String> {
-        return listOf(
+        val biosDir = File(reactApplicationContext.filesDir, "qemu/roms")
+        val args = mutableListOf(
             qemuBinary,
             "-machine", "q35",
             "-cpu", "max",
@@ -475,6 +512,13 @@ class QemuModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaMo
             "-pidfile", "${qemuDir?.absolutePath}/qemu.pid",
             "-serial", "file:${qemuDir?.absolutePath}/qemu.log"
         )
+        
+        // Add BIOS path if available
+        if (biosDir.exists()) {
+            args.addAll(listOf("-L", biosDir.absolutePath))
+        }
+        
+        return args
     }
 
     private fun findQemuBinary(): File? {
@@ -521,6 +565,35 @@ class QemuModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaMo
             FileOutputStream(outFile).use { output ->
                 input.copyTo(output)
             }
+        }
+    }
+    
+    private fun copyAssetDirectory(context: Context, assetDir: String, outDir: File) {
+        val assets = context.assets
+        try {
+            val files = assets.list(assetDir) ?: return
+            
+            for (filename in files) {
+                val assetPath = "$assetDir/$filename"
+                val outFile = File(outDir, filename)
+                
+                try {
+                    // Try to open as file first
+                    assets.open(assetPath).use { input ->
+                        FileOutputStream(outFile).use { output ->
+                            input.copyTo(output)
+                        }
+                    }
+                    Log.d(TAG, "Copied asset: $assetPath")
+                } catch (e: Exception) {
+                    // If it fails, it might be a directory
+                    val subDir = File(outDir, filename)
+                    subDir.mkdirs()
+                    copyAssetDirectory(context, assetPath, subDir)
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to copy asset directory $assetDir: ${e.message}")
         }
     }
 

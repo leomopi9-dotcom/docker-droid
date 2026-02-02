@@ -73,16 +73,45 @@ npx expo start
 
 ### Build APK
 
+**Local Build:**
 ```bash
-# Generate native Android folder
-npx expo prebuild --platform android
-
 # Build debug APK
 cd android && ./gradlew assembleDebug
 
-# Or use EAS Build
-eas build --platform android --profile preview
+# APK location: android/app/build/outputs/apk/debug/app-debug.apk
 ```
+
+**EAS Build (Recommended):**
+```bash
+# Login to Expo
+eas login
+
+# Configure project (first time only)
+eas init
+
+# Build preview APK
+eas build --platform android --profile preview
+
+# Build production AAB
+eas build --platform android --profile production
+```
+
+### CI/CD with GitHub Actions
+
+The project includes a GitHub Actions workflow for automated builds:
+
+1. **Set up EXPO_TOKEN secret:**
+   - Go to [Expo Access Tokens](https://expo.dev/accounts/[your-username]/settings/access-tokens)
+   - Create a new token
+   - Add to GitHub repo: Settings → Secrets → `EXPO_TOKEN`
+
+2. **Update project ID:**
+   - Run `eas init` locally to get project ID
+   - Update `app.json` → `extra.eas.projectId`
+
+3. **Trigger builds:**
+   - Push to `main` or `develop` branch
+   - Or manually via GitHub Actions → "Run workflow"
 
 ## 📁 Project Structure
 
@@ -158,17 +187,31 @@ Default port mappings:
 | 8080 | 80 | HTTP |
 | 3000 | 3000 | Node.js |
 
-## 📦 Installing QEMU Binary
+## 📦 QEMU Binary
 
-The QEMU binary is not included due to size. You have two options:
+QEMU binaries are **included** from [Limbo Emulator](https://github.com/limboemu/limbo) v6.0.1 (QEMU 5.1.0):
 
-### Option 1: Extract from Limbo Emulator
+```
+android/app/src/main/jniLibs/
+├── arm64-v8a/           # For 64-bit ARM devices (~16MB)
+│   ├── libqemu-system-x86_64.so
+│   ├── libglib-2.0.so
+│   ├── libpixman-1.so
+│   ├── libSDL2.so
+│   └── ... other dependencies
+│
+└── armeabi-v7a/         # For 32-bit ARM devices (~13MB)
+    └── ... same files
 
-1. Download [Limbo PC Emulator](https://github.com/limboemu/limbo) APK
-2. Extract `libqemu-system-x86_64.so` from the APK
-3. Place in `android/app/src/main/jniLibs/arm64-v8a/`
+android/app/src/main/assets/qemu/roms/  # BIOS files (~9MB)
+├── bios.bin
+├── vgabios-*.bin
+└── keymaps/
+```
 
-### Option 2: Compile from Source
+### Building from Source (Advanced)
+
+If you need a different QEMU version:
 
 ```bash
 # Clone QEMU
