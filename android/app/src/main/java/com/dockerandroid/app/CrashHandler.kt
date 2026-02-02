@@ -41,8 +41,9 @@ class CrashHandler(private val ctx: Context) : Thread.UncaughtExceptionHandler {
       // Write file atomically (best-effort, avoid long blocking work)
       try {
         file.writeText(meta + sw.toString())
-      } catch (_: Exception) {
-        // ignore write failure
+        android.util.Log.i("CrashHandler", "Wrote crash log to ${'$'}{file.absolutePath}")
+      } catch (e: Exception) {
+        android.util.Log.w("CrashHandler", "Failed to write crash log", e)
       }
     } catch (_: Exception) {
       // ignore

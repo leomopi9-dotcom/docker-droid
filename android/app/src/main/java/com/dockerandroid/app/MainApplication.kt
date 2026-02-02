@@ -44,6 +44,18 @@ class MainApplication : Application(), ReactApplication {
     super.onCreate()
     // Register crash handler that writes uncaught exceptions to external files (crash_logs)
     Thread.setDefaultUncaughtExceptionHandler(CrashHandler(this))
+
+    // Ensure crash_logs directory exists and write an init file so the folder is visible to file managers
+    try {
+      val dir = this.getExternalFilesDir("crash_logs") ?: this.filesDir
+      dir?.mkdirs()
+      val initFile = java.io.File(dir, ".initialized")
+      initFile.writeText("initialized: ${java.time.Instant.now()}")
+      android.util.Log.i("CrashHandlerInit", "Initialized crash_logs at ${'$'}{initFile.absolutePath}")
+    } catch (e: Exception) {
+      android.util.Log.w("CrashHandlerInit", "Failed to initialize crash_logs dir", e)
+    }
+
     DefaultNewArchitectureEntryPoint.releaseLevel = try {
       ReleaseLevel.valueOf(BuildConfig.REACT_NATIVE_RELEASE_LEVEL.uppercase())
     } catch (e: IllegalArgumentException) {
