@@ -1,0 +1,153 @@
+{
+  "version": "1.0.0",
+  "name": "Docker Android VM",
+  "description": "Alpine Linux VM configuration for running Docker on Android",
+  
+  "machine": {
+    "type": "q35",
+    "accelerator": "tcg",
+    "memory": "512M-4096M"
+  },
+  
+  "cpu": {
+    "model": "max",
+    "cores": {
+      "min": 1,
+      "max": 4,
+      "default": 2
+    }
+  },
+  
+  "memory": {
+    "min": 512,
+    "max": 4096,
+    "default": 2048,
+    "unit": "MB"
+  },
+  
+  "storage": {
+    "disk": {
+      "format": "qcow2",
+      "size": {
+        "min": 5,
+        "max": 50,
+        "default": 10,
+        "unit": "GB"
+      }
+    },
+    "cdrom": {
+      "file": "alpine-virt.iso",
+      "boot": true
+    }
+  },
+  
+  "network": {
+    "type": "user",
+    "model": "virtio-net-pci",
+    "portForwarding": [
+      {
+        "name": "docker",
+        "protocol": "tcp",
+        "hostPort": 2375,
+        "guestPort": 2375,
+        "description": "Docker API"
+      },
+      {
+        "name": "ssh",
+        "protocol": "tcp",
+        "hostPort": 2222,
+        "guestPort": 22,
+        "description": "SSH access"
+      },
+      {
+        "name": "http",
+        "protocol": "tcp",
+        "hostPort": 8080,
+        "guestPort": 80,
+        "description": "HTTP (nginx, etc)"
+      },
+      {
+        "name": "http-alt",
+        "protocol": "tcp",
+        "hostPort": 8081,
+        "guestPort": 8080,
+        "description": "Alternative HTTP"
+      },
+      {
+        "name": "nodejs",
+        "protocol": "tcp",
+        "hostPort": 3000,
+        "guestPort": 3000,
+        "description": "Node.js apps"
+      },
+      {
+        "name": "postgresql",
+        "protocol": "tcp",
+        "hostPort": 5432,
+        "guestPort": 5432,
+        "description": "PostgreSQL"
+      },
+      {
+        "name": "mysql",
+        "protocol": "tcp",
+        "hostPort": 3306,
+        "guestPort": 3306,
+        "description": "MySQL/MariaDB"
+      },
+      {
+        "name": "redis",
+        "protocol": "tcp",
+        "hostPort": 6379,
+        "guestPort": 6379,
+        "description": "Redis"
+      }
+    ]
+  },
+  
+  "display": {
+    "type": "none",
+    "vnc": {
+      "enabled": false,
+      "port": 5900
+    }
+  },
+  
+  "boot": {
+    "order": "dc",
+    "menu": false
+  },
+  
+  "performance": {
+    "suggestions": {
+      "minRam": "2048MB for comfortable Docker usage",
+      "recommendedRam": "3072MB for multiple containers",
+      "minStorage": "10GB for basic images",
+      "recommendedStorage": "20GB for development"
+    },
+    "optimization": {
+      "useTcg": true,
+      "tcgThreads": 2,
+      "enableHugepages": false
+    }
+  },
+  
+  "docker": {
+    "apiEndpoint": "http://localhost:2375",
+    "defaultImages": [
+      "alpine:latest",
+      "nginx:alpine",
+      "node:18-alpine",
+      "postgres:15-alpine",
+      "redis:7-alpine"
+    ],
+    "maxContainers": 10,
+    "maxImages": 20
+  },
+  
+  "ssh": {
+    "host": "localhost",
+    "port": 2222,
+    "username": "root",
+    "defaultPassword": "docker"
+  }
+}
