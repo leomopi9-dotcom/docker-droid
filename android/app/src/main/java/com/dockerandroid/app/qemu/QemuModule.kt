@@ -829,6 +829,49 @@ class QemuModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaMo
         }
     }
 
+    /**
+     * Create a manual test crash log file in the same directory used by CrashHandler.
+     * Returns { path } on success.
+     */
+    @ReactMethod
+    fun createTestCrashLog(promise: Promise) {
+        scope.launch {
+            try {
+                val dir = reactApplicationContext.getExternalFilesDir("crash_logs") ?: reactApplicationContext.filesDir
+                dir?.mkdirs()
+                val stamp = java.text.SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", java.util.Locale.US).format(java.util.Date())
+                val file = File(dir, "manual_test_${'$'}{stamp}.log")
+                val content = buildString {
+                    append("manual test log\n")
+                    append("package: ${'$'}{reactApplicationContext.packageName}\n")
+                    append("time: ${'$'}{stamp}\n\n")
+                    append("This is a sample test crash log.\n")
+                }
+                file.writeText(content)
+                Log.i(TAG, "Wrote test crash log to ${'$'}{file.absolutePath}")
+
+                withContext(Dispatchers.Main) {
+                    val result = Arguments.createMap().apply { putString("path", file.absolutePath) }
+                    promise.resolve(result)
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to write test crash log: ${e.message}")
+                withContext(Dispatchers.Main) {
+                    promise.reject("WRITE_FAILED", "Failed to write test crash log: ${e.message}", e)
+                }
+            }
+        }
+    }
+
+    /**
+     * Trigger a native RuntimeException immediately to test crash reporting.
+     * This will kill the app and should be used only from a debug/test action.
+     */
+    @ReactMethod
+    fun triggerNativeCrash() {
+        throw RuntimeException("Manual test crash triggered by user via QemuModule.triggerNativeCrash()")
+    }
+
     override fun invalidate() {
         super.invalidate()
         scope.cancel()
