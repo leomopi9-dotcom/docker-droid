@@ -54,7 +54,8 @@
             "targetSdkVersion": 34,
             "buildToolsVersion": "34.0.0",
             "enableProguardInReleaseBuilds": false,
-            "extraProguardRules": "-keep class com.dockerandroid.** { *; }"
+            "extraProguardRules": "-keep class com.dockerandroid.** { *; }",
+            "enableMinifyInReleaseBuilds": false
           }
         }
       ],
@@ -65,8 +66,9 @@
     },
     "extra": {
       "eas": {
-        "projectId": "your-project-id-here"
+        "projectId": "1f1be5c2-d5a4-4d6c-a87d-3223f12a334d"
       }
-    }
+    },
+    "owner": "kerrylaggon"
   }
 }
