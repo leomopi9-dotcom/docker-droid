@@ -59,6 +59,7 @@
           }
         }
       ],
+      "./plugins/expo-plugin-docker-android",
       "expo-web-browser"
     ],
     "experiments": {

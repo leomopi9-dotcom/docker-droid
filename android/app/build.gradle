@@ -103,17 +103,17 @@ android {
         }
         
         externalNativeBuild {
-            ndkBuild {
-                arguments "APP_PLATFORM=android-24", "APP_STL=c++_shared"
+            cmake {
+                arguments "-DANDROID_STL=c++_shared"
                 abiFilters 'arm64-v8a', 'armeabi-v7a'
             }
         }
     }
     
-    // External native build configuration
+    // External native build configuration (use CMake for new-arch compatibility)
     externalNativeBuild {
-        ndkBuild {
-            path "src/main/jni/Android.mk"
+        cmake {
+            path "src/main/cpp/CMakeLists.txt"
         }
     }
     signingConfigs {
