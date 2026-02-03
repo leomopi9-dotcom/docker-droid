@@ -124,6 +124,35 @@ export default function SettingsScreen() {
             onPress={handleClearCache}
             isDestructive
           />
+          <View style={[styles.divider, { backgroundColor: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }]} />
+          <SettingsRow
+            icon="cloud"
+            label="Create Test Crash Log"
+            description="Write a sample crash log to app storage"
+            onPress={async () => {
+              try {
+                const NativeModules = require('react-native').NativeModules;
+                const res = await NativeModules.QemuModule.createTestCrashLog();
+                alert(`Wrote test log: ${res.path}`);
+              } catch (e) {
+                alert('Failed to write test log: ' + (e.message || e));
+              }
+            }}
+          />
+          <View style={[styles.divider, { backgroundColor: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }]} />
+          <SettingsRow
+            icon="alert-triangle"
+            label="Trigger Native Crash (SIGSEGV)"
+            description="Crash the native layer to test native crash logging"
+            onPress={() => {
+              const { Alert, NativeModules } = require('react-native');
+              Alert.alert('Confirm', 'This will crash the native layer to test native crash logging. Continue?', [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Crash', style: 'destructive', onPress: () => NativeModules.QemuModule.triggerNativeSegfault() },
+              ]);
+            }}
+            isDestructive
+          />
         </View>
       </Animated.View>
 

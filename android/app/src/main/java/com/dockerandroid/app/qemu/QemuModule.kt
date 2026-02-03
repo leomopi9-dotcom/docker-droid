@@ -56,6 +56,15 @@ class QemuModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaMo
     private external fun nativeGetStatus(handle: Long): Int
     private external fun nativeCleanup(handle: Long)
 
+    // trigger a native segfault for testing native crash handler
+    private external fun nativeTriggerSegfault()
+
+    // exposed to JS to trigger native segfault
+    @ReactMethod
+    fun triggerNativeSegfault() {
+        nativeTriggerSegfault()
+    }
+
     init {
         try {
             System.loadLibrary("qemu_jni")
@@ -124,6 +133,16 @@ class QemuModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaMo
                 val configFile = File(qemuDir, "qemu-config.json")
                 if (!configFile.exists()) {
                     createQemuConfig(configFile)
+                }
+
+                // Ensure crash_logs dir exists and initialize native handler
+                try {
+                    val crashDir = context.getExternalFilesDir("crash_logs") ?: context.filesDir
+                    crashDir?.mkdirs()
+                    val ok = nativeInit(crashDir.absolutePath)
+                    Log.i(TAG, "nativeInit returned: ${'$'}{ok}")
+                } catch (e: Exception) {
+                    Log.w(TAG, "nativeInit failed: ${'$'}{e.message}")
                 }
 
                 val result = Arguments.createMap().apply {

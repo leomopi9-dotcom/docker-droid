@@ -85,8 +85,90 @@ Java_com_dockerandroid_app_qemu_QemuModule_nativeInit(
         return JNI_FALSE;
     }
 
+    // Store crash log directory in a static buffer
+    strncpy(crash_dir, dir, sizeof(crash_dir)-1);
+    crash_dir[sizeof(crash_dir)-1] = '\0';
+
+    // Ensure crash dir exists
+    mkdir(crash_dir, 0755);
+
+    // Install basic signal handlers for native crashes
+    install_signal_handlers();
+
     (*env)->ReleaseStringUTFChars(env, data_dir, dir);
     return JNI_TRUE;
+}
+
+// Signal handler
+static void write_crash_log(const char *contents) {
+    if (crash_dir[0] == '\0') return;
+    char path[1024];
+    time_t t = time(NULL);
+    struct tm tm;
+    localtime_r(&t, &tm);
+    char stamp[64];
+    strftime(stamp, sizeof(stamp), "%Y-%m-%d_%H-%M-%S", &tm);
+    snprintf(path, sizeof(path), "%s/crash_%s.log", crash_dir, stamp);
+
+    int fd = open(path, O_CREAT | O_WRONLY | O_TRUNC, 0644);
+    if (fd < 0) return;
+    write(fd, contents, strlen(contents));
+    close(fd);
+}
+
+#include <execinfo.h>
+static void crash_signal_handler(int sig, siginfo_t *si, void *unused) {
+    char buf[1024];
+    snprintf(buf, sizeof(buf), "Native crash: signal=%d, addr=%p\n", sig, si ? si->si_addr : NULL);
+    write_crash_log(buf);
+
+    // Try to capture backtrace (best-effort)
+    void *bt[30];
+    int bt_size = backtrace(bt, 30);
+    int fd = -1;
+    char btbuf[256];
+    snprintf(btbuf, sizeof(btbuf), "Backtrace (%d):\n", bt_size);
+    // append to same file
+    if (crash_dir[0] != '\0') {
+        char path[1024];
+        time_t t = time(NULL);
+        struct tm tm;
+        localtime_r(&t, &tm);
+        char stamp[64];
+        strftime(stamp, sizeof(stamp), "%Y-%m-%d_%H-%M-%S", &tm);
+        snprintf(path, sizeof(path), "%s/crash_%s.log", crash_dir, stamp);
+        fd = open(path, O_WRONLY | O_APPEND);
+    }
+    if (fd >= 0) {
+        write(fd, btbuf, strlen(btbuf));
+        backtrace_symbols_fd(bt, bt_size, fd);
+        close(fd);
+    }
+
+    // Re-raise default handler
+    signal(sig, SIG_DFL);
+    raise(sig);
+}
+
+static void install_signal_handlers() {
+    struct sigaction sa;
+    memset(&sa, 0, sizeof(sa));
+    sa.sa_sigaction = crash_signal_handler;
+    sa.sa_flags = SA_SIGINFO | SA_ONSTACK;
+
+    sigaction(SIGSEGV, &sa, NULL);
+    sigaction(SIGABRT, &sa, NULL);
+    sigaction(SIGFPE, &sa, NULL);
+    sigaction(SIGILL, &sa, NULL);
+    sigaction(SIGBUS, &sa, NULL);
+}
+
+// For testing: trigger segfault
+JNIEXPORT void JNICALL
+Java_com_dockerandroid_app_qemu_QemuModule_nativeTriggerSegfault(JNIEnv *env, jobject thiz) {
+    // intentionally cause segfault
+    int *p = NULL;
+    *p = 42;
 }
 
 /**
