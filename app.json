@@ -43,6 +43,12 @@
     ],
     "experiments": {
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "1f1be5c2-d5a4-4d6c-a87d-3223f12a334d"
+      }
+    },
+    "owner": "kerrylaggon"
   }
 }
